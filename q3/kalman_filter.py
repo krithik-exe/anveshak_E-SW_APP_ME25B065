@@ -33,7 +33,7 @@ class KalmanFilter:
         
     ################ YOUR CODE STARTS HERE ###################
     # Make the covariance matrix for the two sensors  
-        self.R = np.eye(4) * 1.0
+        self.R = np.eye(4) * 1
 
 
     # Go through the kalman filter algorithm and translate it to code
@@ -41,12 +41,13 @@ class KalmanFilter:
         self.x_hat = self.F @ self.x_hat
         self.P = self.F @ self.P @ self.F.T + self.Q
 
-
     def update(self, z):
-        y = z - (self.H @ self.x_hat)
-        S = self.H @ self.P @ self.H.T + self.R
+        self.x_hat = self.F @ self.x_hat
+        self.P = self.F @ self.P @ (self.F.T) + self.Q
+        V = z - self.H @ self.x_hat
+        S = self.H @ self.P @ (self.H.T) + self.R
         K = self.P @ self.H.T @ np.linalg.inv(S)
-        self.x_hat = self.x_hat + (K @ y)
+        self.x_hat += K @ V 
         I = np.eye(self.P.shape[0])
         term1 = I - (K @ self.H)
         self.P = (term1 @ self.P @ term1.T) + (K @ self.R @ K.T)
@@ -130,30 +131,17 @@ def main():
     # Filtered odometry should be in the form of a list of tuples
 
     for i in range(len(ground_truth)):
-        # 1. Fetch data from both sensors for the current time step
         z1_x, z1_y = odom_data_1[i]
         z2_x, z2_y = odom_data_2[i]
-        
-        # 2. Formulate the measurement vector z as a 4x1 column matrix
         z = np.array([[z1_x], 
                       [z1_y], 
                       [z2_x], 
                       [z2_y]])
-        
-        # 3. Predict the next state
         kf.predict()
-        
-        # 4. Update the state with the current dual-sensor measurement
         kf.update(z)
-        
-        # 5. Extract the estimated position (x, y) from the state vector x_hat
-        # x_hat[0, 0] is X position, x_hat[1, 0] is Y position
         filtered_x = float(kf.x_hat[0, 0])
         filtered_y = float(kf.x_hat[1, 0])
-        
-        # 6. Append to our results list as a tuple
         filtered_odom.append((filtered_x, filtered_y))
-
 
     ######################## YOUR CODE ENDS HERE ######################
     
